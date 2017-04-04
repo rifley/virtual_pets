@@ -1,5 +1,15 @@
+import java.sql.Timestamp;
+import org.sql2o.*;
+import java.util.ArrayList;
+import java.util.List;
+
+
 public class Monster {
 
+  private Timestamp birthday;
+  private Timestamp lastSlept;
+  private Timestamp lastAte;
+  private Timestamp lastPlayed;
   private String name;
   private int personId;
   private int id;
@@ -30,6 +40,14 @@ public class Monster {
 
   public int getFoodLevel() {
     return foodLevel;
+  }
+
+  public int getId() {
+    return id;
+  }
+
+  public Timestamp getBirthday() {
+    return birthday;
   }
 
   public boolean isAlive() {
@@ -66,6 +84,34 @@ public class Monster {
       throw new UnsupportedOperationException("You cannot feed your monster anymore you savage! They are bloated :( ");
     }
     foodLevel++;
+  }
+
+  public void save() {
+    try(Connection con = DB.sql2o.open()) {
+      String sql = "INSERT INTO monsters (name, personId, birthday) values (:name, :personId, now())";
+      this.id = (int) con.createQuery(sql, true)
+        .addParameter("name", this.name)
+        .addParameter("personId", this.personId)
+        .executeUpdate()
+        .getKey();
+    }
+  }
+
+  public static List<Monster> all() {
+    String sql = "SELECT * FROM monsters;";
+    try(Connection con = DB.sql2o.open()) {
+      return con.createQuery(sql).executeAndFetch(Monster.class);
+    }
+  }
+
+  public static Monster find(int id) {
+    try(Connection con = DB.sql2o.open()) {
+      String sql = "SELECT * FROM monsters where id = :id";
+      Monster monster = con.createQuery(sql)
+        .addParameter("id", id)
+        .executeAndFetchFirst(Monster.class);
+      return monster;
+    }
   }
 
 }
