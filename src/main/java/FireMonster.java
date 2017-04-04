@@ -1,10 +1,13 @@
 import java.util.Timer;
 import org.sql2o.*;
 import java.util.List;
+import java.sql.Timestamp;
 
 public class FireMonster extends Monster {
   private int fireLevel;
+  public Timestamp lastKindling;
   public static final int MAX_FIRE_LEVEL = 10;
+  public static final String DATABASE_TYPE = "fire";
 
   public FireMonster(String name, int personId) {
     this.name = name;
@@ -14,13 +17,16 @@ public class FireMonster extends Monster {
     foodLevel = MAX_FOOD_LEVEL / 2;
     fireLevel = MAX_FIRE_LEVEL / 2;
     timer = new Timer();
+    type = DATABASE_TYPE;
   }
 
 
   public static List<FireMonster> all() {
-    String sql = "SELECT * FROM monsters;";
+    String sql = "SELECT * FROM monsters where type = 'fire';";
     try(Connection con = DB.sql2o.open()) {
-      return con.createQuery(sql).executeAndFetch(FireMonster.class);
+      return con.createQuery(sql)
+      .throwOnMappingFailure(false)
+      .executeAndFetch(FireMonster.class);
     }
   }
 
@@ -28,6 +34,7 @@ public class FireMonster extends Monster {
     try(Connection con = DB.sql2o.open()) {
       String sql = "SELECT * FROM monsters where id = :id";
       FireMonster monster = con.createQuery(sql)
+        .throwOnMappingFailure(false)
         .addParameter("id", id)
         .executeAndFetchFirst(FireMonster.class);
       return monster;
@@ -63,6 +70,17 @@ public class FireMonster extends Monster {
     if (fireLevel >= MAX_FIRE_LEVEL){
       throw new UnsupportedOperationException("Your monster has reached kindling capacity and is becoming burnt out.");
     }
+    try(Connection con = DB.sql2o.open()) {
+      String sql = "Update monsters set lastkindling = now() where id=:id";
+      con.createQuery(sql)
+      .addParameter("id", id)
+      .executeUpdate();
+      }
     fireLevel++;
   }
+
+  public Timestamp getLastKindling() {
+    return lastKindling;
+  }
+
 }

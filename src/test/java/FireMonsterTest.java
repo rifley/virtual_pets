@@ -183,6 +183,16 @@ public class FireMonsterTest {
   }
 
   @Test
+  public void kindling_recordsTimeLastKindlingInDatabase() {
+    FireMonster testFireMonster = new FireMonster("Bubs", 1);
+    testFireMonster.save();
+    testFireMonster.kindling();
+    Timestamp savedFireMonsterLastKindling = FireMonster.find(testFireMonster.getId()).getLastKindling();
+    Timestamp rightNow = new Timestamp(new Date().getTime());
+    assertEquals(DateFormat.getDateTimeInstance().format(rightNow), DateFormat.getDateTimeInstance().format(savedFireMonsterLastKindling));
+  }
+
+  @Test
   public void timer_executesDepleteLevelsMethod() {
     FireMonster testFireMonster = new FireMonster("Bubbles", 1);
     int firstPlayLevel = testFireMonster.getPlayLevel();

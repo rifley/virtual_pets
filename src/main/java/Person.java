@@ -32,20 +32,59 @@ public class Person {
     return email;
   }
 
+  public int getId() {
+    return id;
+  }
+
+
   public void save() {
   try(Connection con = DB.sql2o.open()) {
     String sql = "INSERT INTO persons (name, email) VALUES (:name, :email)";
-    con.createQuery(sql)
+    this.id = (int) con.createQuery(sql, true)
       .addParameter("name", this.name)
       .addParameter("email", this.email)
-      .executeUpdate();
+      .executeUpdate()
+      .getKey();
     }
   }
 
   public static List<Person> all() {
     String sql = "SELECT * FROM persons";
     try(Connection con = DB.sql2o.open()) {
-     return con.createQuery(sql).executeAndFetch(Person.class);
+     return con.createQuery(sql)
+     .throwOnMappingFailure(false)
+     .executeAndFetch(Person.class);
+    }
+  }
+
+  public List<Object> getMonsters() {
+    List<Object> allMonsters = new ArrayList<Object>();
+
+    try(Connection con = DB.sql2o.open()) {
+      String sqlFire = "SELECT * FROM monsters WHERE personId=:id AND type='fire';";
+      List<FireMonster> fireMonsters = con.createQuery(sqlFire)
+        .addParameter("id", this.id)
+        .throwOnMappingFailure(false)
+        .executeAndFetch(FireMonster.class);
+        allMonsters.addAll(fireMonsters);
+
+      String sqlWater = "SELECT * FROM monsters WHERE personId=:id AND type='water';";
+      List<WaterMonster> waterMonsters = con.createQuery(sqlWater)
+        .addParameter("id", this.id)
+        .throwOnMappingFailure(false)
+        .executeAndFetch(WaterMonster.class);
+        allMonsters.addAll(waterMonsters);
+      }
+      return allMonsters;
+  }
+
+  public void leaveCommunity(Community community) {
+    try(Connection con = DB.sql2o.open()){
+      String joinRemovalQuery = "DELETE FROM communities_persons WHERE community_id = :communityId AND person_id = :personId;";
+      con.createQuery(joinRemovalQuery)
+        .addParameter("communityId", community.getId())
+        .addParameter("personId", this.getId())
+        .executeUpdate();
     }
   }
 }

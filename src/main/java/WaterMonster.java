@@ -1,10 +1,13 @@
 import java.util.Timer;
 import org.sql2o.*;
 import java.util.List;
+import java.sql.Timestamp;
 
 public class WaterMonster extends Monster {
   private int waterLevel;
+  public Timestamp lastWater;
   public static final int MAX_WATER_LEVEL = 8;
+  public static final String DATABASE_TYPE = "water";
 
 
   public WaterMonster(String name, int personId) {
@@ -15,12 +18,15 @@ public class WaterMonster extends Monster {
     foodLevel = MAX_FOOD_LEVEL / 2;
     waterLevel = MAX_WATER_LEVEL /2;
     timer = new Timer();
+    type = DATABASE_TYPE;
   }
 
   public static List<WaterMonster> all() {
-    String sql = "SELECT * FROM monsters;";
+    String sql = "SELECT * FROM monsters where type = 'water';";
     try(Connection con = DB.sql2o.open()) {
-      return con.createQuery(sql).executeAndFetch(WaterMonster.class);
+      return con.createQuery(sql)
+      .throwOnMappingFailure(false)
+      .executeAndFetch(WaterMonster.class);
     }
   }
 
@@ -28,6 +34,7 @@ public class WaterMonster extends Monster {
     try(Connection con = DB.sql2o.open()) {
       String sql = "SELECT * FROM monsters where id = :id";
       WaterMonster monster = con.createQuery(sql)
+        .throwOnMappingFailure(false)
         .addParameter("id", id)
         .executeAndFetchFirst(WaterMonster.class);
       return monster;
@@ -41,6 +48,12 @@ public class WaterMonster extends Monster {
   public void water() {
     if(waterLevel >= MAX_WATER_LEVEL) {
       throw new UnsupportedOperationException("Your pet is drowning. STOP WATERING IT YOU MONSTER");
+    }
+    try(Connection con = DB.sql2o.open()) {
+      String sql = "UPDATE monsters SET lastwater = now() where id = :id";
+      con.createQuery(sql)
+        .addParameter("id", id)
+        .executeUpdate();
     }
     waterLevel++;
   }
@@ -64,5 +77,9 @@ public class WaterMonster extends Monster {
       return false;
     }
     return true;
+  }
+
+  public Timestamp getLastWater() {
+    return lastWater;
   }
 }
